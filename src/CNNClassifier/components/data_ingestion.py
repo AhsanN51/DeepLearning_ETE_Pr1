@@ -3,7 +3,7 @@ import urllib.request as request
 import zipfile
 from CNNClassifier import logger
 from CNNClassifier.utils.common import get_size
-from CNNClassifier.entity.confiig_entity import DataIngestionConfig
+from CNNClassifier.entity.config_entity import DataIngestionConfig
 from pathlib import Path
 
 
