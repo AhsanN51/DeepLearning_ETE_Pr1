@@ -14,7 +14,7 @@ stages:
       - src/CNNClassifier/pipeline/stage_02_prepare_base_model.py
       - config/config.yaml
     params:
-      - IMAGE_SIZE"
+      - IMAGE_SIZE
       - INCLUDE_TOP
       - CLASSES
       - WEIGHTS
