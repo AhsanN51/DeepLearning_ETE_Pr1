@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poultry Disease AI Detection</title>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+
+    <style>
+        body {
+            background: #f4f6fb;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        h3 {
+            font-weight: 700;
+            color: #1b2d6b;
+        }
+
+        .main-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+        }
+
+        .upload-box {
+            height: 320px;
+            width: 320px;
+            margin: auto;
+            border: 2px dashed #cbd3e3;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fafbff;
+            transition: 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .upload-box.drag {
+            border-color: #007bff;
+            background: #eef3ff;
+        }
+
+        .upload-box img {
+            max-width: 100%;
+            max-height: 300px;
+        }
+
+        #uploadText {
+            text-align: center;
+            color: #888;
+            font-weight: 500;
+        }
+
+        .btn {
+            border-radius: 30px;
+        }
+
+        .res-card {
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+
+        .disease {
+            font-size: 28px;
+            font-weight: 700;
+            color: #28a745;
+            margin-top: 10px;
+        }
+
+        #loading {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .loader {
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #1b2d6b;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container py-5">
+        <div class="main-card">
+            <h3 class="text-center mb-4">Poultry Disease Detection AI</h3>
+
+            <div class="row">
+                <!-- Upload Section -->
+                <div class="col-md-6 text-center">
+                    <div class="upload-box" id="dropArea">
+                        <img id="photo" style="display:none;">
+                        <span id="uploadText">Drop Image Here<br>or Click Upload</span>
+                    </div>
+
+                    <canvas style="display:none;" id="canvas"></canvas>
+
+                    <div class="mt-3">
+                        <button class="btn btn-primary mr-2" id="uload">Upload</button>
+                        <button class="btn btn-success" id="send">Predict</button>
+                    </div>
+
+                    <input type="hidden" id="url" value="../predict">
+                    <input type="file" id="fileinput" accept="image/*" style="display:none">
+                </div>
+
+                <!-- Result Section -->
+                <div class="col-md-6">
+                    <div class="res-card">
+                        <h5>Diagnosis Result</h5>
+                        <div id="resultArea">
+                            <p class="text-muted">Upload an image and click Predict</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="loading">
+        <div class="loader"></div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+    <script>
+        var base_data = "";
+
+        function sendRequest(base64Data) {
+            if (base64Data != "") {
+                var url = $("#url").val();
+                $("#loading").show();
+
+                $.ajax({
+                    url: url,
+                    type: "post",
+                    headers: { 'Content-Type': 'application/json' },
+                    data: JSON.stringify({ image: base64Data }),
+                    success: function (res) {
+                        console.log("API response:", res);
+                        // Backend returns [{ "image": "Coccidiosis" }]
+                        var disease = (Array.isArray(res) && res.length > 0 && res[0].image) ? res[0].image : "Unknown";
+
+                        $("#resultArea").html(
+                            "<div class='alert alert-success'>" +
+                            "<h4>Detected Disease</h4>" +
+                            "<div class='disease'>" + disease + "</div>" +
+                            "</div>"
+                        );
+                        $("#loading").hide();
+                    },
+                    error: function (err) {
+                        $("#resultArea").html("<div class='alert alert-danger'>Error contacting API</div>");
+                        $("#loading").hide();
+                        console.error(err);
+                    }
+                });
+            }
+        }
+
+        $(document).ready(function () {
+            $("#loading").hide();
+
+            $("#send").click(function () { sendRequest(base_data); });
+
+            $("#uload").click(function () { $("#fileinput").click(); });
+
+            $("#fileinput").change(function () {
+                handleFile(this.files[0]);
+            });
+
+            const dropArea = document.getElementById("dropArea");
+
+            dropArea.addEventListener("dragover", function (e) {
+                e.preventDefault();
+                dropArea.classList.add("drag");
+            });
+
+            dropArea.addEventListener("dragleave", function () {
+                dropArea.classList.remove("drag");
+            });
+
+            dropArea.addEventListener("drop", function (e) {
+                e.preventDefault();
+                dropArea.classList.remove("drag");
+                var file = e.dataTransfer.files[0];
+                handleFile(file);
+            });
+
+            function handleFile(file) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var url = e.target.result;
+                    var img = new Image();
+                    img.crossOrigin = "Anonymous";
+                    img.onload = function () {
+                        var canvas = document.createElement("canvas");
+                        var ctx = canvas.getContext("2d");
+                        canvas.width = this.width;
+                        canvas.height = this.height;
+                        ctx.drawImage(this, 0, 0);
+                        base_data = canvas.toDataURL("image/jpeg").replace(/^data:image.+;base64,/, "");
+                    };
+                    img.src = url;
+                    $("#photo").attr("src", url).show();
+                    $("#uploadText").hide();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+
+</body>
+
+</html>

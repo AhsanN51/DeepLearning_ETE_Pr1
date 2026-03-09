@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CNNCLS Object Classification</title>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+
+    <style>
+        body {
+            background: #f4f6fb;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        h3 {
+            font-weight: 700;
+            color: #1b2d6b;
+        }
+
+        .main-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            padding: 25px;
+        }
+
+        .image-part {
+            height: 320px;
+            width: 320px;
+            border: 2px dashed #d0d6e2;
+            border-radius: 10px;
+            margin: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fafbff;
+        }
+
+        .image-part img,
+        .image-part video {
+            max-height: 300px;
+            max-width: 300px;
+            padding: 5px;
+        }
+
+        .btn {
+            border-radius: 30px;
+        }
+
+        .btn-part {
+            width: 330px;
+            margin: auto;
+        }
+
+        .res-part {
+            border: 1px solid #e2e6f0;
+            border-radius: 8px;
+            height: 300px;
+            overflow: auto;
+            background: #fbfcff;
+            padding: 15px;
+        }
+
+        .res-part2 {
+            border: 1px solid #e2e6f0;
+            border-radius: 8px;
+            height: 300px;
+            background: #fbfcff;
+            padding: 10px;
+        }
+
+        .resp-img {
+            max-width: 100%;
+            max-height: 280px;
+        }
+
+        #loading {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .loader {
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #1b2d6b;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .result-title {
+            font-weight: 600;
+            color: #1b2d6b;
+            margin-bottom: 10px;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div class="container py-5">
+
+        <div class="main-card">
+
+            <h3 class="text-center mb-4">Object Classification</h3>
+
+            <div class="row">
+
+                <!-- Upload Section -->
+                <div class="col-md-6 text-center">
+
+                    <div class="image-part">
+
+                        <video autoplay id="video"
+                            poster="https://img.freepik.com/free-vector/group-young-people-posing-photo_52683-18824.jpg"></video>
+
+                        <img src="" id="photo" style="display:none">
+
+                        <canvas style="display:none;" id="canvas"></canvas>
+
+                    </div>
+
+                    <div class="btn-part mt-3">
+
+                        <form id="upload-data">
+
+                            <div class="row">
+
+                                <button type="button" class="btn btn-primary col-5 mr-2" id="uload">
+                                    Upload
+                                </button>
+
+                                <button type="button" class="btn btn-success col-5" id="send">
+                                    Predict
+                                </button>
+
+                            </div>
+
+                            <input type="hidden" class="form-control" id="url" value="../predict" />
+
+                            <input name="upload" type="file" id="fileinput" style="position:absolute;top:-500px;" />
+
+                        </form>
+
+                    </div>
+
+                </div>
+
+                <!-- Results -->
+                <div class="col-md-6">
+
+                    <h5 class="text-center result-title">
+                        Prediction Results
+                    </h5>
+
+                    <div class="row">
+
+                        <div class="res-part2 col-md-5 mr-3"></div>
+
+                        <div class="res-part col-md-6">
+
+                            <div class="jsonRes"></div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div id="loading">
+        <div class="loader"></div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+    <script>
+
+        var myvideo = document.getElementById('video');
+        var mycanvas = document.getElementById('canvas');
+        var myphoto = document.getElementById('photo');
+        var base_data = "";
+
+        function sendRequest(base64Data) {
+
+            if (base64Data != "" || base64Data != null) {
+
+                var url = $("#url").val();
+
+                $("#loading").show();
+
+                $.ajax({
+                    url: url,
+                    type: "post",
+                    cache: false,
+                    async: true,
+                    crossDomain: true,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    data: JSON.stringify({ image: base64Data }),
+
+                    success: function (res) {
+
+                        $(".res-part").html("");
+                        $(".res-part2").html("");
+
+                        try {
+                            var imageData = res[1].image;
+
+                            if (imageData.length > 10) {
+
+                                $(".res-part2").append(
+                                    "<img class='resp-img' src='data:image/jpeg;base64," +
+                                    imageData +
+                                    "' />"
+                                );
+
+                            }
+
+                        } catch (e) { }
+
+                        $(".res-part").html(
+                            "<pre>" + JSON.stringify(res, undefined, 2) + "</pre>"
+                        );
+
+                        $("#loading").hide();
+
+                    }
+
+                });
+
+            }
+
+        }
+
+        $(document).ready(function () {
+
+            $("#loading").hide();
+
+            $('#send').click(function () {
+
+                sendRequest(base_data);
+
+            });
+
+            $('#uload').click(function () {
+
+                $('#fileinput').focus().trigger('click');
+
+            });
+
+            $("#fileinput").change(function () {
+
+                if (this.files && this.files[0]) {
+
+                    var reader = new FileReader();
+
+                    reader.onload = function (e) {
+
+                        var url = e.target.result;
+
+                        var img = new Image();
+
+                        img.crossOrigin = 'Anonymous';
+
+                        img.onload = function () {
+
+                            var canvas = document.createElement('CANVAS');
+
+                            var ctx = canvas.getContext('2d');
+
+                            canvas.height = this.height;
+
+                            canvas.width = this.width;
+
+                            ctx.drawImage(this, 0, 0);
+
+                            base_data = canvas
+                                .toDataURL('image/jpeg', 1.0)
+                                .replace(/^data:image.+;base64,/, '');
+
+                            canvas = null;
+
+                        };
+
+                        img.src = url;
+
+                        $('#photo').attr('src', url);
+
+                        $('#photo').show();
+
+                        $('#video').hide();
+
+                    }
+
+                    reader.readAsDataURL(this.files[0]);
+
+                }
+
+            });
+
+        });
+
+    </script>
+
+</body>
+
+</html>
