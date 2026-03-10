@@ -11,3 +11,7 @@
 7. Update the pipeline
 8. Update the main.py
 9. Update the dvc.yaml
+
+
+## ECR URI
+360025768117.dkr.ecr.ap-south-1.amazonaws.com/chickendisease

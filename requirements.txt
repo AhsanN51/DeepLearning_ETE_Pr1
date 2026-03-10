@@ -1,4 +1,4 @@
-#tensorflow use as per your system compatability
+tensorflow
 pandas 
 dvc
 notebook
